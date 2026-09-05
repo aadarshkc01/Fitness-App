@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id           String   @id @db.Uuid
+  fullName     String   @map("full_name")
+  role         String   @default("member")
+  tokenVersion Int      @default(0) @map("token_version")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  intakeProfile IntakeProfile?
+
+  @@map("profiles")
+}
+
+model IntakeProfile {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @unique @map("user_id") @db.Uuid
+  profile                Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  age                    Int
+  sex                    String
+  heightCm               Decimal  @map("height_cm")
+  weightKg               Decimal  @map("weight_kg")
+  goal                   String
+  experienceLevel        String   @map("experience_level")
+  daysAvailable          Int      @map("days_available")
+  sessionDurationMinutes Int      @map("session_duration_minutes")
+  equipmentAccess        String   @map("equipment_access")
+  injuryFlags            Json     @default("[]") @map("injury_flags")
+  medicalFlags           Json     @default("[]") @map("medical_flags")
+  parQStatus             String   @default("cleared") @map("par_q_status")
+  measurements           Json     @default("{}")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("intake_profiles")
+}
+
+model Exercise {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  category          String
+  muscleGroup       String   @map("muscle_group")
+  equipmentRequired String   @map("equipment_required")
+  difficultyLevel   String   @map("difficulty_level")
+  contraindications Json     @default("[]")
+  substitutionGroup String?  @map("substitution_group")
+  formCueSummary    String   @map("form_cue_summary")
+  videoUrl          String?  @map("video_url")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  planSessions PlanSession[]
+  @@map("exercises")
+}
+
+model Plan {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  goal        String
+  splitType   String   @map("split_type")
+  startDate   DateTime @default(now()) @map("start_date")
+  currentWeek Int      @default(1) @map("current_week")
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sessions PlanSession[]
+
+  @@map("plans")
+}
+
+model PlanSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  planId       String   @map("plan_id") @db.Uuid
+  plan         Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  dayNumber    Int      @map("day_number")
+  weekNumber   Int      @map("week_number")
+  exerciseId   String   @map("exercise_id") @db.Uuid
+  exercise     Exercise @relation(fields: [exerciseId], references: [id])
+
+  targetSets   Int      @map("target_sets")
+  targetReps   Int      @map("target_reps")
+  targetRpe    Int      @map("target_rpe")
+
+  logs SessionLog[]
+
+  @@map("plan_sessions")
+}
+
+model SessionLog {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  planSessionId String      @map("plan_session_id") @db.Uuid
+  planSession   PlanSession @relation(fields: [planSessionId], references: [id], onDelete: Cascade)
+
+  actualSets   Int      @map("actual_sets")
+  actualReps   Int      @map("actual_reps")
+  actualWeight Decimal  @map("actual_weight")
+  actualRpe    Int      @map("actual_rpe")
+  loggedAt     DateTime @default(now()) @map("logged_at")
+
+  @@map("session_logs")
+}

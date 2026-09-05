@@ -1,0 +1,37 @@
+:root {
+  /* Color */
+  --color-base: #15171B;
+  --color-base-raised: #1D2025;
+  --color-neutral: #E8E6E1;
+  --color-neutral-dim: #A8A6A0;
+  --color-accent: #C7401C;
+  --color-accent-hover: #A83417;
+  --color-danger: #D64545;
+  --color-success: #4A9B6E;
+
+  /* Type */
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-data: 'JetBrains Mono', monospace;
+
+  /* Spacing scale — intentionally non-uniform */
+  --space-xs: 6px;
+  --space-sm: 14px;
+  --space-md: 28px;
+  --space-lg: 52px;
+  --space-xl: 96px;
+
+  /* Motion */
+  --ease-signature: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 180ms;
+  --duration-reveal: 500ms;
+
+  --radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
