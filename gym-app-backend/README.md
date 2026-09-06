@@ -1,76 +1,104 @@
-# Sprint 1 — Auth Foundation
+# FORM. — Backend
 
-This is the working auth layer for the fitness app: Express + TypeScript backend, Supabase for
-identity (password hashing, email verification, sessions) plus a `profiles` table for our own
-app data (role, token_version).
+Express + TypeScript API backing the FORM. fitness application. Handles
+authentication, user intake/health screening, exercise library management,
+plan generation, and workout logging with rule-based progression feedback.
 
-## Setup
+## Overview
 
-1. **Create a Supabase project** at supabase.com (free tier is enough for now).
-2. **Run the SQL migration**: open Supabase Dashboard → SQL Editor → paste the contents of
-   `sql/001_profiles_table.sql` → Run. This creates the `profiles` table, enables Row Level
-   Security, and sets up a trigger so every new signup automatically gets a profile row.
-3. **Copy `.env.example` to `.env`** and fill in your Supabase URL + keys (found in
-   Project Settings → API) and a random `JWT_SECRET` (any long random string).
-4. **Install dependencies:**
-   ```
+This service is intentionally split into two kinds of logic:
+
+- **AI/LLM-free, deterministic logic** — plan generation, load progression,
+  deload triggers, and injury-aware exercise substitution all live in
+  `src/utils/ruleEngine.ts` as plain, testable functions. Anything that
+  affects a user's training load or safety is decided here, not by a model.
+- **A future AI layer** — `POST /coach/chat` exists as a placeholder
+  endpoint today. It is wired end-to-end (frontend chat UI → this route)
+  but returns a static response; RAG retrieval and LLM integration are not
+  yet implemented.
+
+## Tech Stack
+
+- Node.js, Express, TypeScript
+- Prisma ORM against PostgreSQL (hosted on Supabase)
+- Supabase Auth for identity (email/password + Google OAuth)
+- Row Level Security enforced at the database layer
+
+## Getting Started
+
+1. **Create a Supabase project** at supabase.com.
+2. **Configure environment variables** — copy `.env.example` to `.env` and fill in:
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → API)
+   - `DATABASE_URL`, `DIRECT_URL` (Project Settings → Database → Connection String)
+   - `JWT_SECRET` — any long random string, used to sign the app's own session tokens
+3. **Install dependencies:**
+   ```bash
    npm install
    ```
-5. **Run in dev mode:**
+4. **Apply the schema:**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
    ```
+   Row Level Security policies and CHECK constraints live in the migration
+   SQL directly (Prisma does not generate these) — see the migration files
+   in `prisma/migrations/` for what's applied beyond table structure.
+5. **Seed the exercise library:**
+   ```bash
+   npx prisma db seed
+   ```
+6. **Run the server:**
+   ```bash
    npm run dev
    ```
+   Starts on `http://localhost:5000` by default.
 
-## What's implemented
+## API Overview
 
-- `POST /auth/signup` — creates a user via Supabase Auth, auto-creates a `profiles` row (default role: `member`)
-- `POST /auth/login` — returns our own app-issued JWT (contains userId, role, tokenVersion)
-- `POST /auth/logout` — stateless logout (client discards token)
-- `POST /auth/logout-all` — bumps `token_version` in the DB, instantly invalidating all previously issued tokens (the same pattern used in VideoTube)
-- `GET /auth/me` — protected route, returns the decoded user from the token — use this to confirm auth is wired correctly
-- `GET /admin/ping` — example of a role-gated route (`super_admin` only), proves `authorize()` works
-- `authenticate` middleware — verifies the JWT AND checks token_version against the DB on every request
-- `authorize(...roles)` middleware — gates a route to specific roles
+| Area | Routes |
+|---|---|
+| Auth | `POST /auth/signup`, `/login`, `/oauth-exchange`, `/logout`, `/logout-all`, `GET /auth/me`, `DELETE /auth/delete-account` |
+| Profile | `PATCH /profile` |
+| Intake | `POST /intake`, `GET /intake/me` |
+| Exercises | `GET /exercises` (filterable by `equipment`, `category`) |
+| Plans | `POST /plans/generate`, `GET /plans/me` |
+| Session logs | `POST /session-logs`, `GET /session-logs/history/:planSessionId` |
+| Coach (placeholder) | `POST /coach/chat` |
 
-## Manually testing the flow
+All routes except signup/login/oauth-exchange require a `Bearer` token
+issued by this service (not the raw Supabase session token).
 
-```bash
-# 1. Signup
-curl -X POST http://localhost:5000/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","fullName":"Test User"}'
+## Project Structure
 
-# 2. Login (copy the returned token)
-curl -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# 3. Hit a protected route
-curl http://localhost:5000/auth/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-
-# 4. Log out of all devices, then confirm the old token is rejected
-curl -X POST http://localhost:5000/auth/logout-all \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-
-curl http://localhost:5000/auth/me \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-# ^ should now return 401 "Session expired"
+```
+src/
+├── config/       External service clients (Supabase)
+├── db/           Prisma client + connection bootstrapping
+├── controllers/  Request handlers, one per resource
+├── routes/       Thin route definitions, no business logic
+├── middleware/   Auth verification, role gating, error handling
+├── utils/        ApiError/ApiResponse conventions, the rule engine
+└── types/        Shared TypeScript types and domain constants
 ```
 
-## To make a user a `super_admin` or `trainer` (for testing role gating)
+## Safety Design Notes
 
-Manually update it in Supabase Dashboard → Table Editor → `profiles` → change `role` for a
-test user. There's no self-signup path to admin/trainer roles on purpose — those should be
-assigned by an existing admin, which we'll build in a later sprint.
+- PAR-Q-style health screening runs at intake; a flagged result
+  (`parQStatus: flagged_consult_doctor`) blocks automatic plan generation
+  server-side, regardless of what the client sends.
+- Progression decisions require at least two logged sessions for the same
+  exercise before recommending a load change — a single session is
+  insufficient signal, same as a real coach wouldn't adjust load off one
+  data point.
+- Exercise substitution respects reported injury flags automatically when
+  a plan is generated.
 
-## Definition of Done — checklist
+## Roadmap
 
-- [x] Signup/login/logout working
-- [x] Protected routes return 401 without a valid token
-- [x] Roles correctly gate admin-only routes
-- [x] `logout-all` invalidates previously issued tokens (tokenVersion pattern)
+- RAG knowledge base + LLM integration behind the existing `/coach/chat` contract
+- Session-per-device-type model (replacing blanket logout-all) ahead of mobile clients
+- Trainer/admin role-specific endpoints (roles exist in schema, unused today)
 
-## Next sprint
+## License
 
-Sprint 2: `INTAKE_PROFILES` and `EXERCISES` tables + the multi-step intake form UI.
+MIT — see repository root `LICENSE`.

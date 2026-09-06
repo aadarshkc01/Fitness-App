@@ -93,7 +93,11 @@ export default function AppSidebar() {
                       <Badge variant="outline" className="ml-auto text-[10px] group-data-[collapsible=icon]:hidden">SOON</Badge>
                     </SidebarMenuButton>
                   ) : (
-                    <SidebarMenuButton asChild isActive={location.pathname === item.path} tooltip={item.label}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.path} tooltip={item.label}
+                      className="transform transition-all duration-300 ease-in-out
+             hover:translate-x-1 hover:bg-accent/30
+             data-[active=true]:bg-accent data-[active=true]:text-primary data-[active=true]:shadow-md data-[active=true]:border-l-4 data-[active=true]:border-primary"
+                    >
                       <Link to={item.path}>
                         <item.icon />
                         <span>{item.label}</span>
@@ -109,7 +113,7 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild  className=" cursor-pointer">
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg bg-primary/10 text-primary text-xs font-semibold">
@@ -128,14 +132,14 @@ export default function AppSidebar() {
           <DropdownMenuContent side="top" align="start" className="w-56">
             <DropdownMenuLabel className="text-xs text-muted-foreground">{user?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/profile"><User className="mr-2 h-4 w-4" />Profile</Link>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/profile"><User className="mr-2 h-4 w-4 " />Profile</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="cursor-pointer">
               <Link to="/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

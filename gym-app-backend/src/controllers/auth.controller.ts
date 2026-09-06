@@ -84,3 +84,25 @@ export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   return res.json(new ApiResponse(200, { user: req.user }));
 });
+
+/**
+ * DELETE /auth/delete-account
+ * Permanently removes the user's data (profile → cascades to intake_profiles,
+ * plans, plan_sessions, session_logs via Prisma FK onDelete: Cascade), then
+ * deletes the actual Supabase Auth user (email/password identity) via the
+ * Admin API — this requires the service_role key, which is why this can only
+ * happen on the backend, never from the frontend directly.
+ */
+export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+
+  // Deleting the profile cascades to every dependent table automatically.
+  await prisma.profile.delete({ where: { id: userId } }).catch(() => {
+    // If the profile row is already gone for some reason, continue to auth deletion anyway.
+  });
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) throw new ApiError(500, 'Failed to delete account identity: ' + error.message);
+
+  return res.json(new ApiResponse(200, null, 'Account permanently deleted'));
+});

@@ -17,10 +17,10 @@ export default function AppShell({ children, title, subtitle, action }: Props) {
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 scale-140 p-2" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex-1">
-            <h1 className="text-lg font-semibold leading-tight">{title}</h1>
+            <h1 className=" text-lg font-semibold leading-tight">{title}</h1>
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
           {action}

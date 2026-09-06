@@ -39,7 +39,7 @@ export default function LogSession() {
           <button
             key={d}
             onClick={() => setSelectedDay(d)}
-            className={`px-4 py-2 rounded-md text-sm border transition-colors ${
+            className={`cursor-pointer px-4 py-2 rounded-md text-sm border transition-colors ${
               selectedDay === d ? 'bg-primary text-primary-foreground border-primary' : 'bg-card hover:bg-accent'
             }`}
           >

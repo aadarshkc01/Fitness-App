@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +17,17 @@ import AppShell from '../components/AppShell';
 export default function Settings() {
   const { mode, setMode } = useTheme();
   const { user, clearAuth } = useAuth();
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+
+  useEffect(() => {
+    async function checkProvider() {
+      const { data: userData } = await supabase.auth.getUser();
+      const providers = userData.user?.app_metadata?.providers as string[] | undefined;
+      const singleProvider = userData.user?.app_metadata?.provider;
+      setIsGoogleUser(!!providers?.includes('google') || singleProvider === 'google');
+    }
+    checkProvider();
+  }, []);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -28,16 +39,23 @@ export default function Settings() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (newPassword.length < 8) return toast.error('New password must be at least 8 characters.');
-    if (newPassword !== confirmPassword) return toast.error('New password and confirmation do not match.');
-    if (!user?.email) return toast.error('Could not verify account email.');
+async function handleChangePassword(e: React.FormEvent) {
+  e.preventDefault();
+  if (newPassword.length < 8) return toast.error('New password must be at least 8 characters.');
+  if (newPassword !== confirmPassword) return toast.error('New password and confirmation do not match.');
+  if (!user?.email) return toast.error('Could not verify account email.');
 
-    setPwLoading(true);
-    try {
-      const { error: reAuthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
-      if (reAuthError) return toast.error('Current password is incorrect.');
+  setPwLoading(true);
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const isGoogleUser = sessionData.session?.user?.app_metadata?.provider === 'google';
+    if (isGoogleUser) {
+      toast.error('You signed in with Google — there\'s no password to change on this account.');
+      return;
+    }
+
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (reAuthError) return toast.error('Current password is incorrect.');
 
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) return toast.error(updateError.message);
@@ -77,11 +95,35 @@ export default function Settings() {
   return (
     <AppShell title="Settings">
       <Tabs defaultValue="preferences" orientation="vertical" className="flex gap-6 max-w-3xl">
-  <TabsList className="flex-col h-fit w-48 items-stretch bg-transparent p-0">
-    <TabsTrigger value="preferences" className="justify-start data-[state=active]:bg-accent">Preferences</TabsTrigger>
-    <TabsTrigger value="security" className="justify-start data-[state=active]:bg-accent">Security</TabsTrigger>
-    <TabsTrigger value="danger" className="justify-start data-[state=active]:bg-accent">Danger Zone</TabsTrigger>
-  </TabsList>
+<TabsList className="flex-col h-fit w-48 items-stretch bg-transparent p-0">
+  <TabsTrigger 
+    value="preferences" 
+    className="justify-start cursor-pointer text-[15px] font-semibold transform transition-all duration-300 ease-in-out 
+               hover:translate-x-1 hover:bg-accent/30 
+               data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-md"
+  >
+    Preferences
+  </TabsTrigger>
+
+  <TabsTrigger 
+    value="security" 
+    className="justify-start cursor-pointer text-[15px] font-semibold transform transition-all duration-300 ease-in-out 
+               hover:translate-x-1 hover:bg-accent/30 
+               data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-md"
+  >
+    Security
+  </TabsTrigger>
+
+  <TabsTrigger 
+    value="danger" 
+    className="justify-start cursor-pointer text-[15px] font-semibold transform transition-all duration-300 ease-in-out 
+               hover:translate-x-1 hover:bg-accent/30 
+               data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-md"
+  >
+    Danger Zone
+  </TabsTrigger>
+</TabsList>
+
   <div className="flex-1">
 
         <TabsContent value="preferences">
@@ -99,7 +141,7 @@ export default function Settings() {
                 <button
                   key={opt.key}
                   onClick={() => setMode(opt.key)}
-                  className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
+                  className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors cursor-pointer ${
                     mode === opt.key ? 'border-primary bg-primary/5' : 'hover:bg-accent'
                   }`}
                 >
@@ -113,27 +155,35 @@ export default function Settings() {
 
         <TabsContent value="security">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Change password</CardTitle>
-              <CardDescription>Your current password is required to confirm this change.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
-                <div className="space-y-2">
-                  <Label>Current password</Label>
-                  <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>New password</Label>
-                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Confirm new password</Label>
-                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
-                </div>
-                <Button type="submit" disabled={pwLoading}>{pwLoading ? 'Updating…' : 'Update password'}</Button>
-              </form>
-            </CardContent>
+<CardHeader>
+  <CardTitle className="text-base">Change password</CardTitle>
+  <CardDescription>
+    {isGoogleUser ? 'This account uses Google sign‑in. Password management is handled by Google and cannot be changed here.' : 'Your current password is required to confirm this change.'}
+  </CardDescription>
+</CardHeader>
+<CardContent>
+  {isGoogleUser ? (
+    <p className="text-sm text-muted-foreground rounded-md border bg-muted p-4">
+      You signed in with Google — there's no password on this account to change.
+    </p>
+  ) : (
+    <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+      <div className="space-y-2">
+        <Label>Current password</Label>
+        <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+      </div>
+      <div className="space-y-2">
+        <Label>New password</Label>
+        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
+      </div>
+      <div className="space-y-2">
+        <Label>Confirm new password</Label>
+        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
+      </div>
+      <Button type="submit" disabled={pwLoading}>{pwLoading ? 'Updating…' : 'Update password'}</Button>
+    </form>
+  )}
+</CardContent>
           </Card>
         </TabsContent>
 

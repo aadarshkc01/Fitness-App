@@ -7,6 +7,8 @@ import intakeRoutes from './routes/intake.routes';
 import exercisesRoutes from './routes/exercises.routes';
 import plansRoutes from './routes/plans.routes';
 import sessionLogsRoutes from './routes/sessionLogs.routes';
+import profileRoutes from './routes/profile.routes';
+import coachRoutes from './routes/coach.routes';
 import { authenticate, authorize } from './middleware/auth.middleware';
 import { errorHandler } from './middleware/errorHandler.middleware';
 
@@ -21,6 +23,8 @@ app.use('/intake', intakeRoutes);
 app.use('/exercises', exercisesRoutes);
 app.use('/plans', plansRoutes);
 app.use('/session-logs', sessionLogsRoutes);
+app.use('/profile', profileRoutes);
+app.use('/coach', coachRoutes);
 
 app.get('/admin/ping', authenticate, authorize('super_admin'), (_req, res) => {
   res.json({ message: 'You are a super_admin. This route is protected correctly.' });

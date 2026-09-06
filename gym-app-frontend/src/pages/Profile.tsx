@@ -7,16 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../context/AuthContext';
+import { updateProfile } from '../api/profileApi';
 import AppShell from '../components/AppShell';
 
 export default function Profile() {
-  const { user } = useAuth();
+const { user, token, updateUser } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName || '');
 
-  function handleSave() {
-    // NOTE: backend PATCH /profile endpoint pending — UI ready for it.
+ async function handleSave() {
+  if (!token) return;
+  try {
+    await updateProfile(token, fullName);
+    updateUser({ fullName });
     toast.success('Saved');
+  } catch (err: any) {
+    toast.error(err.message);
   }
+}
 
   const initials = fullName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 

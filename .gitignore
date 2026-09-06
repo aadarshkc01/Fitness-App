@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment secrets — never commit real .env files
+.env
+*/.env
+!.env.example
+!*/.env.example
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Prisma
+gym-app-backend/prisma/migrations/**/migration.sql.bak
+
+# Editor/OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
