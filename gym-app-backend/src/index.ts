@@ -18,7 +18,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://fitness-app-three-beige.vercel.app/',
+  'https://fitness-app-three-beige.vercel.app',
 ];
 
 app.use(cors({
