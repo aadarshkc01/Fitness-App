@@ -2,7 +2,7 @@
 
 Structured strength training for people who can't afford a personal trainer.
 
-FORM. replaces the two things a PT actually provides that software can — a
+Fitness App replaces the two things a PT actually provides that software can — a
 personalized program built from your goals, equipment, and injury history,
 and consistent, data-driven progression session to session. It does not
 replace real-time form correction or the human coaching relationship;
