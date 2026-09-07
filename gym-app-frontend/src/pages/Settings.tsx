@@ -67,14 +67,16 @@ async function handleChangePassword(e: React.FormEvent) {
     }
   }
 
-  async function handleDeleteAccount() {
-    if (deleteConfirmText !== 'DELETE') return toast.error('Type DELETE exactly to confirm.');
-    if (!user?.email) return toast.error('Could not verify account.');
+async function handleDeleteAccount() {
+  if (deleteConfirmText !== 'DELETE') return toast.error('Type DELETE exactly to confirm.');
+  if (!user?.email) return toast.error('Could not verify account.');
 
-    setDeleteLoading(true);
-    try {
+  setDeleteLoading(true);
+  try {
+    if (!isGoogleUser) {
       const { error: reAuthError } = await supabase.auth.signInWithPassword({ email: user.email, password: deletePassword });
       if (reAuthError) return toast.error('Password is incorrect.');
+    }
 
       const API_URL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
@@ -85,12 +87,12 @@ async function handleChangePassword(e: React.FormEvent) {
         return toast.error(result.message || 'Account deletion endpoint not yet available.');
       }
 
-toast.success('Account permanently deleted');
-clearAuth();
-setTimeout(() => { window.location.href = '/'; }, 1500);
-    } finally {
-      setDeleteLoading(false);
-    }
+        toast.success('Account permanently deleted');
+        clearAuth();
+        setTimeout(() => { window.location.href = '/'; }, 1500);
+            } finally {
+              setDeleteLoading(false);
+            }
   }
 
   return (
@@ -208,7 +210,9 @@ setTimeout(() => { window.location.href = '/'; }, 1500);
                   </DialogHeader>
                   <div className="space-y-3">
                     <Input placeholder="Type DELETE" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} />
-                    <Input type="password" placeholder="Your password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+                    {!isGoogleUser && (
+                      <Input type="password" placeholder="Your password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+                    )}
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
