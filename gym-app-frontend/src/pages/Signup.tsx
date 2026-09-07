@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { signup } from '../api/authApi';
-import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabaseClient';
 
 export default function Signup() {
@@ -14,7 +13,6 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setAuth } = useAuth();
   const navigate = useNavigate();
 
 async function handleSubmit(e: React.FormEvent) {
