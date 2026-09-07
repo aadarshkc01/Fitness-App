@@ -85,8 +85,9 @@ async function handleChangePassword(e: React.FormEvent) {
         return toast.error(result.message || 'Account deletion endpoint not yet available.');
       }
 
-      clearAuth();
-      window.location.href = '/';
+toast.success('Account permanently deleted');
+clearAuth();
+setTimeout(() => { window.location.href = '/'; }, 1500);
     } finally {
       setDeleteLoading(false);
     }

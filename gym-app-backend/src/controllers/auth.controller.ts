@@ -101,8 +101,12 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response) =>
     // If the profile row is already gone for some reason, continue to auth deletion anyway.
   });
 
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-  if (error) throw new ApiError(500, 'Failed to delete account identity: ' + error.message);
+const { error } = await supabaseAdmin.auth.admin.deleteUser(userId, false);
+if (error) {
+  console.error('Supabase user deletion failed:', error);
+  throw new ApiError(500, 'Failed to delete account identity: ' + error.message);
+}
+console.log('Successfully deleted auth user:', userId);
 
   return res.json(new ApiResponse(200, null, 'Account permanently deleted'));
 });

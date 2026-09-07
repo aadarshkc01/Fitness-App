@@ -17,20 +17,19 @@ export default function Signup() {
   const { setAuth } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const data = await signup(email, password, fullName);
-      setAuth(data.token, data.user);
-      toast.success('Account created');
-      navigate('/dashboard');
-    } catch (err: any) {
-      toast.error(err.message || 'Signup failed');
-    } finally {
-      setLoading(false);
-    }
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    await signup(email, password, fullName);
+    toast.success('Account created — please log in to continue.');
+    navigate('/login');
+  } catch (err: any) {
+    toast.error(err.message || 'Signup failed');
+  } finally {
+    setLoading(false);
   }
+}
 
   async function handleGoogleSignup() {
     await supabase.auth.signInWithOAuth({
